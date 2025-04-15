@@ -26,21 +26,23 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
+        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if (${{ matrix.os }} -eq 'windows-latest') {
             yarn config set workspaces-experimental true
-          fi
+          }
           yarn install --frozen-lockfile --network-timeout 100000
 
       - name: Build
+        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if (${{ matrix.os }} -eq 'windows-latest') {
             yarn build --platform win32
-          else
+          } else {
             # Skip notarization for macOS builds in CI
-            export CSC_IDENTITY_AUTO_DISCOVERY=false
+            $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
             yarn build
-          fi
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
