@@ -8,13 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-    
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,30 +21,51 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
+        shell: pwsh
         run: |
-          if (${{ matrix.os }} -eq 'windows-latest') {
-            yarn config set workspaces-experimental true
-          }
+          yarn config set workspaces-experimental true
           yarn install --frozen-lockfile --network-timeout 100000
 
       - name: Build
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
-        run: |
-          if (${{ matrix.os }} -eq 'windows-latest') {
-            yarn build --platform win32
-          } else {
-            # Skip notarization for macOS builds in CI
-            $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
-            yarn build
-          }
+        shell: pwsh
+        run: yarn build --platform win32
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-build
+          name: windows-build
+          path: |
+            dist
+            release/build
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --network-timeout 100000
+
+      - name: Build
+        run: |
+          export CSC_IDENTITY_AUTO_DISCOVERY=false
+          yarn build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
           path: |
             dist
             release/build 
