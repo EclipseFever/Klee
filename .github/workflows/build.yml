@@ -37,6 +37,8 @@ jobs:
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
             yarn build --platform win32
           else
+            # Skip notarization for macOS builds in CI
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
             yarn build
           fi
         env:
